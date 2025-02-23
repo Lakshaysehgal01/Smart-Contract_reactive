@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.13;
-import {Ownable} from "node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import './lib/reactive-lib/src/abstract-base/AbstractCallback.sol';
 
-contract RewardsEth is Ownable{
+//this is final for now
+contract RewardsEth is AbstractCallback{
+    address private owner;
+    modifier onlyOwner{
+        require(msg.sender==owner,"You are not the owner of the contract");
+        _;
+    }
     mapping(address => bool ) public goalComplete;
     mapping(address =>uint) public claimRewards;
     uint public totalDonation;
@@ -11,9 +17,8 @@ contract RewardsEth is Ownable{
     event Donation(address indexed donor, uint value);
     event Claimed(address indexed user,uint value); 
     event SetReward(address indexed user, uint indexed value);
-    constructor()Ownable(msg.sender) {
-   
-
+    constructor(address callback) AbstractCallback(callback) payable {
+        owner=msg.sender;
     }
     function donation() public payable{
         require(msg.value>0,"Please donate money more than zero");
@@ -27,22 +32,19 @@ contract RewardsEth is Ownable{
         claimRewards[_user]+=_value;
         emit SetReward(_user,_value);
     }
-    function claim() public {
-        require(goalComplete[msg.sender], "Please complete your daily goals first");
-        uint amount = claimRewards[msg.sender];
+    function claim(address /*spender*/,address _user) public {
+        require(goalComplete[_user], "Please complete your daily goals first");
+        uint amount = claimRewards[_user];
         require(amount > 0, "No rewards to claim");
         require(moneyInContract >= amount, "Insufficient funds in contract");
 
-        claimRewards[msg.sender] = 0;
-        goalComplete[msg.sender] = false;
+        claimRewards[_user] = 0;
+        goalComplete[_user] = false;
         moneyInContract -= amount;
 
-        payable(msg.sender).transfer(amount);
+        payable(_user).transfer(amount);
 
-        emit Claimed(msg.sender, amount); 
+        emit Claimed(_user, amount); 
     }
 
-    receive() external payable{
-        donation();
-    }
 }
