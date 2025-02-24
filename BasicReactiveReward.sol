@@ -37,7 +37,7 @@ contract RewardsReactive is IReactive, AbstractReactive {
         address user=address(uint160(log.topic_1));
 
         bytes memory payload = abi.encodeWithSignature("claim(address,address)",address(0),user);
-        emit Callback(log.chain_id, user, GAS_LIMIT, payload);
+        emit Callback(log.chain_id, rewardsContract, GAS_LIMIT, payload);
     }
 
     function subscribe() external {
